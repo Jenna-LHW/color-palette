@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gradient Color Palette</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #ffffff;
+            padding: 40px 20px;
+            line-height: 1.4;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #333;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .search-container {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .search-input {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            width: 300px;
+            max-width: 100%;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #333;
+        }
+
+        .color-row {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .color-row:last-child {
+            border-bottom: none;
+        }
+
+        .category-label {
+            font-size: 18px;
+            font-weight: 500;
+            color: #333;
+            width: 100px;
+            flex-shrink: 0;
+            margin-right: 30px;
+            padding-top: 20px;
+        }
+
+        .colors-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 15px;
+            flex: 1;
+            width: 100%;
+        }
+
+        .color-square {
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 4px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 5px;
+        }
+
+        .color-square:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 10;
+            border: 2px solid #333;
+        }
+
+        .hex-code {
+            font-size: 10px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            color: white;
+            background: rgba(0,0,0,0.6);
+            padding: 2px 4px;
+            border-radius: 2px;
+            line-height: 1;
+        }
+
+        .color-square.light .hex-code {
+            color: #333;
+            background: rgba(255,255,255,0.8);
+            text-shadow: none;
+        }
+
+        .copy-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            transform: translateX(300px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .copy-notification.show {
+            transform: translateX(0);
+        }
+
+        @media (max-width: 768px) {
+            .color-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .category-label {
+                margin-bottom: 15px;
+                margin-right: 0;
+                width: 100%;
+                padding-top: 0;
+            }
+            
+            .colors-container {
+                grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+                gap: 10px;
+            }
+            
+            .color-square {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .hex-code {
+                font-size: 9px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .colors-container {
+                grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+                gap: 8px;
+            }
+            
+            .color-square {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .hex-code {
+                font-size: 8px;
+                padding: 1px 2px;
+            }
+        }
+
+        .gradient-info {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gradient Color Palette</h1>
+        <div class="gradient-info">
+            Click any color to copy its hex code.
+        </div>
+        
+        <div class="search-container">
+            <input type="text" class="search-input" placeholder="Search colors..." onkeyup="searchColors(this.value)">
+        </div>
+        
+        <div id="colorRows">
+            <!-- Color rows will be generated here -->
+        </div>
+    </div>
+
+    <div class="copy-notification" id="copyNotification">
+        Hex code copied! 📋
+    </div>
+
+    <script>
+        // Function to calculate perceived brightness of a color
+        function getPerceivedBrightness(hex) {
+            const r = parseInt(hex.substr(1, 2), 16);
+            const g = parseInt(hex.substr(3, 2), 16);
+            const b = parseInt(hex.substr(5, 2), 16);
+            return (r * 299 + g * 587 + b * 114) / 1000;
+        }
+
+        // Function to generate gradient colors from light to dark
+        function generateGradient(baseColor, steps = 15) {
+            const colors = [];
+            
+            // Convert hex to RGB
+            const hex = baseColor.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            
+            for (let i = 0; i < steps; i++) {
+                const factor = i / (steps - 1);
+                
+                // Generate from very light (almost white) to very dark (almost black)
+                let newR, newG, newB;
+                
+                if (factor < 0.5) {
+                    // Light to base color
+                    const lightFactor = 1 - (factor * 2);
+                    newR = Math.round(r + (255 - r) * lightFactor);
+                    newG = Math.round(g + (255 - g) * lightFactor);
+                    newB = Math.round(b + (255 - b) * lightFactor);
+                } else {
+                    // Base color to dark
+                    const darkFactor = (factor - 0.5) * 2;
+                    newR = Math.round(r * (1 - darkFactor * 0.9));
+                    newG = Math.round(g * (1 - darkFactor * 0.9));
+                    newB = Math.round(b * (1 - darkFactor * 0.9));
+                }
+                
+                const hexR = Math.max(0, Math.min(255, newR)).toString(16).padStart(2, '0');
+                const hexG = Math.max(0, Math.min(255, newG)).toString(16).padStart(2, '0');
+                const hexB = Math.max(0, Math.min(255, newB)).toString(16).padStart(2, '0');
+                
+                colors.push(`#${hexR}${hexG}${hexB}`);
+            }
+            
+            return colors;
+        }
+
+        const colorData = {
+            "Red": "#FF0000",
+            "Orange": "#FF8000",
+            "Yellow": "#FFFF00",
+            "Green": "#00FF00",
+            "Blue": "#0080FF",
+            "Purple": "#8000FF",
+            "Pink": "#FF00FF",
+            "Cyan": "#00FFFF",
+            "Brown": "#8B4513",
+            "Gray": "#808080",
+            "Teal": "#008080",
+            "Indigo": "#4B0082",
+            "Lime": "#32CD32",
+            "Coral": "#FF7F50",
+            "Navy": "#000080",
+            "Maroon": "#800000"
+        };
+
+        function renderColorChart() {
+            const container = document.getElementById('colorRows');
+            container.innerHTML = '';
+            
+            Object.keys(colorData).forEach(colorName => {
+                const baseColor = colorData[colorName];
+                const gradientColors = generateGradient(baseColor, 15);
+                
+                const row = document.createElement('div');
+                row.className = 'color-row';
+                row.dataset.category = colorName.toLowerCase();
+                
+                const label = document.createElement('div');
+                label.className = 'category-label';
+                label.textContent = colorName;
+                
+                const colorsContainer = document.createElement('div');
+                colorsContainer.className = 'colors-container';
+                
+                gradientColors.forEach((hex, index) => {
+                    const colorSquare = document.createElement('div');
+                    colorSquare.className = 'color-square';
+                    colorSquare.style.backgroundColor = hex;
+                    colorSquare.dataset.colorHex = hex.toLowerCase();
+                    colorSquare.onclick = () => copyToClipboard(hex);
+                    
+                    // Determine if the color is light or dark for text contrast
+                    const brightness = getPerceivedBrightness(hex);
+                    if (brightness > 128) {
+                        colorSquare.classList.add('light');
+                    }
+                    
+                    const hexCode = document.createElement('div');
+                    hexCode.className = 'hex-code';
+                    hexCode.textContent = hex.toUpperCase();
+                    
+                    colorSquare.appendChild(hexCode);
+                    colorsContainer.appendChild(colorSquare);
+                });
+                
+                row.appendChild(label);
+                row.appendChild(colorsContainer);
+                container.appendChild(row);
+            });
+        }
+
+        function copyToClipboard(hexCode) {
+            navigator.clipboard.writeText(hexCode).then(() => {
+                showCopyNotification();
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = hexCode;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showCopyNotification();
+            });
+        }
+
+        function showCopyNotification() {
+            const notification = document.getElementById('copyNotification');
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 2000);
+        }
+
+        function searchColors(searchTerm) {
+            const rows = document.querySelectorAll('.color-row');
+            
+            if (!searchTerm.trim()) {
+                rows.forEach(row => row.style.display = 'flex');
+                return;
+            }
+            
+            const term = searchTerm.toLowerCase();
+            
+            rows.forEach(row => {
+                const categoryMatch = row.dataset.category.includes(term);
+                row.style.display = categoryMatch ? 'flex' : 'none';
+            });
+        }
+
+        // Initialize the page
+        renderColorChart();
+    </script>
+</body>
+</html>
